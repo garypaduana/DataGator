@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans	xmlns="http://www.springframework.org/schema/beans"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:int="http://www.springframework.org/schema/integration"
+		xmlns:file="http://www.springframework.org/schema/integration/file"
+		xmlns:stream="http://www.springframework.org/schema/integration/stream"
+		xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+			http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.2.xsd
+			http://www.springframework.org/schema/integration/stream http://www.springframework.org/schema/integration/stream/spring-integration-stream-4.0.xsd
+			http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+			http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- ########################## -->
+	<!-- ###     Properties     ### -->
+	<!-- ########################## -->
+	
+	<context:property-placeholder
+		location="classpath:app.properties"
+		ignore-unresolvable="true"
+		order="1"/>
+		
+	<!-- ########################## -->
+	<!-- ###      Encoding      ### -->
+	<!-- ########################## -->
+
+	<file:inbound-channel-adapter 
+		directory="${paths.encode}"
+		channel="filePickupChannel"
+		filename-regex="${encode.regex}"
+		prevent-duplicates="false">
+		<int:poller fixed-rate="5000"/>
+	</file:inbound-channel-adapter>
+		
+	<int:header-enricher
+		input-channel="filePickupChannel"
+		output-channel="encodeChannel">
+		<int:header name="origFile" expression="payload"/>
+	</int:header-enricher>
+	
+	<int:service-activator
+		input-channel="encodeChannel"
+		output-channel="encodeResultChannel"
+		ref="fileProcessor"
+		method="encode">
+	</int:service-activator>	
+	
+	<int:router
+		input-channel="encodeResultChannel"
+		ignore-send-failures="false"
+		default-output-channel="stdout"
+		expression="payload">		
+		<int:mapping value="true" channel="encodeDeleteChannel"/>
+		<int:mapping value="false" channel="stdout"/>
+	</int:router>
+	
+	<int:service-activator
+		input-channel="encodeDeleteChannel"
+		expression="headers['origFile'].delete()"
+		output-channel="stdout">
+	</int:service-activator>
+	
+	<!-- ########################## -->
+	<!-- ###     Youtube-dl     ### -->
+	<!-- ########################## -->
+	
+	<file:inbound-channel-adapter 
+		directory="${paths.youtube.download}"
+		channel="youtubeDownloadChannel"
+		filename-regex="${url.regex}"
+		prevent-duplicates="false">
+		<int:poller
+			fixed-rate="5000">
+		</int:poller>
+	</file:inbound-channel-adapter>
+	
+	<file:file-to-string-transformer
+		delete-files="true"
+		input-channel="youtubeDownloadChannel"
+		output-channel="youtubeDownloadStringChannel"/>
+	
+	<int:service-activator
+		input-channel="youtubeDownloadStringChannel"
+		ref="fileProcessor"
+		method="youtubeDownload">
+	</int:service-activator>	
+	
+	<!-- ########################## -->
+	<!-- ###     Youtube-MP3    ### -->
+	<!-- ########################## -->
+	
+	<file:inbound-channel-adapter 
+		directory="${paths.youtube.mp3}"
+		channel="youtubeMp3Channel"
+		filename-regex="${url.regex}"
+		prevent-duplicates="false">
+		<int:poller
+			fixed-rate="5000">
+		</int:poller>
+	</file:inbound-channel-adapter>
+	
+	<file:file-to-string-transformer
+		delete-files="true"
+		input-channel="youtubeMp3Channel"
+		output-channel="youtubeMp3StringChannel"/>
+	
+	<int:service-activator
+		input-channel="youtubeMp3StringChannel"
+		ref="fileProcessor"
+		method="youtubeMp3">
+	</int:service-activator>	
+
+	<!-- ########################## -->
+	<!-- ###  Generic Adapters  ### -->
+	<!-- ########################## -->
+	
+	<stream:stdout-channel-adapter 
+		id="stdout" 
+		append-newline="true" />
+		
+	<!-- ########################## -->
+	<!-- ###       Beans        ### -->
+	<!-- ########################## -->
+	
+	<bean
+		id="fileProcessor"
+		class="datagator.processor.FileProcessor">
+		<property name="encodeDir" value="${paths.encode}"/>
+		<property name="youtubeDownloadDir" value="${paths.youtube.download}"/>
+		<property name="youtubeMp3Dir" value="${paths.youtube.mp3}"/>
+		<property name="completed" value="${paths.encode.complete}"/>
+		<property name="encodeExtension" value="${encode.extension}"/>
+		<property name="handbrakeCli" value="${encode.handbrakecli.path}"/>
+		<property name="encodingPreset" value="${encode.preset}"/>
+		<property name="regex" value="${encode.regex}"/>
+		<property name="youtubedl" value="${youtubedl.path}"/>
+	</bean>	
+</beans>
