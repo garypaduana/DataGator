@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class FileProcessor {
@@ -21,10 +20,11 @@ public class FileProcessor {
 	private String encodingPreset;
 	private String regex;
 	
-	// Youtube properties
-	private String youtubedl;
+	// MP3
+	private String mp3Quality;
 	
 	private String sep = System.getProperty("file.separator");
+	private String rotateParent;
 	
 	/**
 	 * Encode a file using HandBrakeCLI and a configurable preset encoding profile.
@@ -34,7 +34,7 @@ public class FileProcessor {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public boolean encode(File file) throws IOException, InterruptedException{
+	public File encode(File file) throws IOException, InterruptedException{
 		
 		String toPath = completed + sep +
 				file.getName().substring(0, file.getName().lastIndexOf(".")) +
@@ -43,17 +43,14 @@ public class FileProcessor {
 		new File(completed).mkdirs();
 				
 		List<String> command = new ArrayList<String>();
-	    command.addAll(Arrays.asList(new String[]{
-	    	handbrakeCli,
-			"-i",
-			file.getAbsolutePath(),
-			"-o",
-			toPath,
-			encodingPreset}));
-	    
+		command.add("HandBrakeCLI");
+		command.add("-i");
+		command.add(file.getAbsolutePath());
+		command.add("-o");
+		command.add(toPath);
+		command.add(encodingPreset);
 	    executeCommand(command);
-	    
-	    return true;
+	    return file;
 	}
 	
 	/**
@@ -64,14 +61,12 @@ public class FileProcessor {
 	 * @throws InterruptedException
 	 */
 	public void youtubeDownload(String contents) throws IOException, InterruptedException{
-		// TODO: check inputs to avoid ArrayIndexOutOfBoundsException
 		String url = contents.split("URL=")[1];		
 		List<String> command = new ArrayList<String>();
 		
 		command.clear();
-		command.add(youtubedl);
+		command.add("youtube-dl");
 		command.add(url);
-		//command.add("--restrict-filenames");  // This prevents non-alphanumeric chars
 		command.add("-o");
 		command.add(youtubeDownloadDir + sep + "%(title)s.%(ext)s");
 		executeCommand(command);
@@ -85,14 +80,12 @@ public class FileProcessor {
 	 * @throws InterruptedException
 	 */
 	public void youtubeMp3(String contents) throws IOException, InterruptedException{
-		// TODO: check inputs to avoid ArrayIndexOutOfBoundsException
 		String url = contents.split("URL=")[1];		
 		List<String> command = new ArrayList<String>();
 		
 		command.clear();
-		command.add(youtubedl);
+		command.add("youtube-dl");
 		command.add(url);
-		//command.add("--restrict-filenames");
 		command.add("-x");
 		command.add("--audio-format");
 		command.add("mp3");
@@ -102,6 +95,48 @@ public class FileProcessor {
 		command.add(youtubeMp3Dir + sep + "%(title)s.%(ext)s");
 		executeCommand(command);
 	}
+	
+	public File encodeMp3(File file) throws IOException, InterruptedException{
+		List<String> command = new ArrayList<String>();
+		new File(file.getParent() + "/output/").mkdirs();
+		
+		command.clear();
+		command.add("lame");
+		command.add("-h");
+		command.add(mp3Quality);
+		command.add(file.getAbsolutePath());
+		command.add(file.getParent() + "/output/" + file.getName());
+		
+		executeCommand(command);
+		return file;
+	}
+	
+	/**
+	 * Rotates a movie file 90 degrees clockwise using ffmpeg.
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public File rotateMovie(File file) throws IOException, InterruptedException{
+		List<String> command = new ArrayList<String>();
+		new File(rotateParent + "/output/").mkdirs();
+		
+		command.clear();
+		command.add("ffmpeg");
+		command.add("-i");
+		command.add(file.getAbsolutePath());
+		command.add("-vf");
+		command.add("transpose=1");
+		command.add("-vcodec");
+		command.add("libx264");
+		command.add(rotateParent + "/output/" + file.getName());
+		
+		executeCommand(command);
+		return file;
+	}
+	
 		
 	/**
 	 * Executes a system process and prints InputStream and ErrorStream to
@@ -176,14 +211,6 @@ public class FileProcessor {
 		this.regex = regex;
 	}
 
-	public String getYoutubedl() {
-		return youtubedl;
-	}
-
-	public void setYoutubedl(String youtubedl) {
-		this.youtubedl = youtubedl;
-	}
-	
 	public String getEncodeDir() {
 		return encodeDir;
 	}
@@ -206,5 +233,21 @@ public class FileProcessor {
 
 	public void setYoutubeMp3Dir(String youtubeMp3Dir) {
 		this.youtubeMp3Dir = youtubeMp3Dir;
+	}
+
+	public String getMp3Quality() {
+		return mp3Quality;
+	}
+
+	public void setMp3Quality(String mp3Quality) {
+		this.mp3Quality = mp3Quality;
+	}
+
+	public String getRotateParent() {
+		return rotateParent;
+	}
+
+	public void setRotateParent(String rotateParent) {
+		this.rotateParent = rotateParent;
 	}
 }
