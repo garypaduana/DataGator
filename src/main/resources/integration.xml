@@ -32,11 +32,11 @@
 	</file:inbound-channel-adapter>
 	
 	<int:chain input-channel="encodeChannel" output-channel="stdout">
-	    <int:header-enricher>
-	        <int:header name="#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}" expression="payload"/>
-	    </int:header-enricher>
-	    <int:service-activator ref="fileProcessor" method="encode"/>
-	    <int:service-activator expression="headers['#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}'].delete()"/>
+		<int:header-enricher>
+			<int:header name="#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}" expression="payload"/>
+		</int:header-enricher>
+		<int:service-activator ref="fileProcessor" method="encode"/>
+		<int:service-activator expression="headers['#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}'].delete()"/>
 	</int:chain>
 	
 	<!-- ########################## -->
@@ -51,8 +51,8 @@
 	</file:inbound-channel-adapter>
 	
 	<int:chain input-channel="youtubeDownloadChannel" output-channel="stdout">
-	    <file:file-to-string-transformer delete-files="true"/> 
-	    <int:service-activator ref="fileProcessor" method="youtubeDownload"/>
+		<file:file-to-string-transformer delete-files="true"/> 
+		<int:service-activator ref="fileProcessor" method="youtubeDownload"/>
 	</int:chain>
 	
 	<!-- ########################## -->
@@ -67,8 +67,8 @@
 	</file:inbound-channel-adapter>
 	
 	<int:chain input-channel="youtubeMp3Channel" output-channel="stdout">
-	    <file:file-to-string-transformer delete-files="true"/>
-	    <int:service-activator ref="fileProcessor" method="youtubeMp3"/>
+		<file:file-to-string-transformer delete-files="true"/>
+		<int:service-activator ref="fileProcessor" method="youtubeMp3"/>
 	</int:chain>
 	
 	<!-- ########################## -->
@@ -76,16 +76,16 @@
 	<!-- ########################## -->	
 	
 	<file:inbound-channel-adapter
-	    directory="${paths.mp3}"
-	    channel="mp3EncodeChannel"
-	    filename-regex="${mp3.regex}">
-	    <int:poller fixed-rate="5000"/>
+		directory="${paths.mp3}"
+		channel="mp3EncodeChannel"
+		filename-regex="${mp3.regex}">
+		<int:poller fixed-rate="5000"/>
 	</file:inbound-channel-adapter>
 	
 	<int:chain input-channel="mp3EncodeChannel" output-channel="stdout">
-	    <int:header-enricher>
-	        <int:header name="#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}" expression="payload"/>
-	    </int:header-enricher>
+		<int:header-enricher>
+			<int:header name="#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}" expression="payload"/>
+		</int:header-enricher>
 		<int:service-activator ref="fileProcessor" method="encodeMp3"/>
 		<int:service-activator expression="headers['#{T(org.springframework.integration.file.FileHeaders).ORIGINAL_FILE}'].delete()"/>
 	</int:chain>
@@ -95,20 +95,20 @@
 	<!-- ########################## -->	
 	
 	<file:inbound-channel-adapter
-	    directory="${paths.rotate}"
-	    channel="movieRotateChannel"
-	    filename-regex="${rotate.regex}"
-	    prevent-duplicates="false">
+		directory="${paths.rotate}"
+		channel="movieRotateChannel"
+		filename-regex="${rotate.regex}"
+		prevent-duplicates="false">
 		<int:poller fixed-rate="5000"/>
 	</file:inbound-channel-adapter>
 	
 	<int:chain input-channel="movieRotateChannel" output-channel="stdout">
-	    <int:header-enricher>
-	        <int:header name="originalFile" expression="payload"/>
-	        <int:header name="workingFile" expression="new java.io.File(payload.parent + '/.working', payload.name)"/>
-	    </int:header-enricher>
-	    <int:service-activator expression="headers.workingFile.getParentFile().mkdirs()"/>
-	    <int:service-activator expression="headers.originalFile.renameTo(headers.workingFile)"/>
+		<int:header-enricher>
+			<int:header name="originalFile" expression="payload"/>
+			<int:header name="workingFile" expression="new java.io.File(payload.parent + '/.working', payload.name)"/>
+		</int:header-enricher>
+		<int:service-activator expression="headers.workingFile.getParentFile().mkdirs()"/>
+		<int:service-activator expression="headers.originalFile.renameTo(headers.workingFile)"/>
 		<int:transformer expression="headers.workingFile"/>
 		<int:service-activator ref="fileProcessor" method="rotateMovie"/>
 		<int:service-activator expression="payload.delete()"/>
