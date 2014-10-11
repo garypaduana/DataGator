@@ -16,7 +16,7 @@ Dependencies for full functionality.  These should be available on `PATH`.
 - [lame](http://lame.sourceforge.net/)
 
 Building
-- `maven install`
+- `mvn install`
 
 Running
 - `$ java -jar ./target/DataGator-0.1.0.jar`
