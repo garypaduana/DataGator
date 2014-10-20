@@ -178,7 +178,12 @@ public class FileProcessor {
 	 */
 	public File scrapeUrl(File file) throws IOException, URISyntaxException{
 		String contents = readFile(file);
-		String url = contents.split("URL=")[1];	
+		String url = contents.split("URL=")[1];
+		Matcher httpRootMatcher = Pattern.compile("(http(s?)://.+?)/.+").matcher(url);
+		String httpRoot = null;
+		if(httpRootMatcher.find()){
+			httpRoot = httpRootMatcher.group(1);
+		}
 		
 		String pageSource = getUrlContents(url);
 		
@@ -192,7 +197,7 @@ public class FileProcessor {
 			log.debug("Downloading... " + link);
 			
 			File destination = new File(file.getParent(), link.substring(link.lastIndexOf("/") + 1, link.length()));
-			downloadFile(link, destination);
+			downloadFile(link, destination, httpRoot);
 		}
 		
 		return file;
@@ -205,7 +210,7 @@ public class FileProcessor {
 	 * @param destination
 	 * @throws IOException
 	 */
-	public void downloadFile(String url, File destination) throws IOException{
+	public void downloadFile(String url, File destination, String httpRoot) throws IOException{
 		FileOutputStream fos = null;
 		URL site = null;
 		
@@ -214,9 +219,7 @@ public class FileProcessor {
 				site = new URL(url);
 			}
 			catch(MalformedURLException ex){
-				// 4chan currently specifies links as //i.4cdn.org/1234567890123.jpg
-				// this adds the protocol.  most other links from other sites are fully constructed.
-				site = new URL("http:" + url);
+				site = new URL(httpRoot + url);
 			}
 			ReadableByteChannel rbc = Channels.newChannel(site.openStream());
 			fos = new FileOutputStream(destination);
