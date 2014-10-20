@@ -180,7 +180,7 @@ public class FileProcessor {
 		String contents = readFile(file);
 		String url = contents.split("URL=")[1];
 		Matcher httpRootMatcher = Pattern.compile("(http(s?)://.+?)/.+").matcher(url);
-		String httpRoot = null;
+		String httpRoot = "";
 		if(httpRootMatcher.find()){
 			httpRoot = httpRootMatcher.group(1);
 		}
