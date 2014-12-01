@@ -1,11 +1,13 @@
 package datagator.processor;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -22,7 +24,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.integration.annotation.Header;
+import org.springframework.integration.annotation.Payload;
 
 public class FileProcessor {
 
@@ -44,6 +50,9 @@ public class FileProcessor {
 	private String rotateParent;
 	
 	private String scrapeRegex;
+	
+	private ClassPathResource cpResource;
+	private String pdfSelectFileName;
 	
 	private static final Logger log = Logger.getLogger(FileProcessor.class);
 	/**
@@ -203,6 +212,39 @@ public class FileProcessor {
 		return file;
 	}
 	
+	public File selectPdfPages(File file) 
+		throws IOException, InterruptedException{
+		
+		List<String> command = new ArrayList<String>();
+		File pythonSourceFile = new File(file.getParentFile(), pdfSelectFileName);
+		inputStreamToFile(cpResource.getInputStream(), pythonSourceFile);
+		
+		command.clear();
+		command.add("python");
+		command.add(pythonSourceFile.getAbsolutePath());
+		command.add(file.getAbsolutePath());
+		command.add(pythonSourceFile.getParent() + "/completed/");
+		
+		String fileNameNoExt = FilenameUtils.removeExtension(file.getName());
+		
+		for(String part : fileNameNoExt.split(" ")){
+			command.add(part);
+		}
+		
+		executeCommand(command);
+		return file;
+	}
+	
+	public void inputStreamToFile(InputStream is, File destination) throws IOException{
+		try(BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destination))){
+			byte[] buffer = new byte[8192];
+			int read = 0;
+			while((read = is.read(buffer)) != -1){
+				bos.write(buffer, 0, read);
+			}
+		}
+	}
+	
 	/**
 	 * Downloads the contents of a url to the specified destination.
 	 * 
@@ -213,6 +255,10 @@ public class FileProcessor {
 	public void downloadFile(String url, File destination, String httpRoot) throws IOException{
 		FileOutputStream fos = null;
 		URL site = null;
+		
+		if(url.startsWith("//")){
+			url = httpRoot.substring(0, httpRoot.lastIndexOf("//")) + url;
+		}
 		
 		try{
 			try{
@@ -313,6 +359,7 @@ public class FileProcessor {
 	    builder.directory(new File(System.getenv("temp")));
 	    List<String> results = new ArrayList<String>();
 	    
+	    System.out.println(">>> attempting to execute: " + command);
 	    final Process process = builder.start();
 	    
 	    try(BufferedReader bufferedReader = new BufferedReader(
@@ -416,4 +463,20 @@ public class FileProcessor {
 	public void setScrapeRegex(String scrapeRegex) {
 		this.scrapeRegex = scrapeRegex;
 	}
+
+	public ClassPathResource getCpResource() {
+		return cpResource;
+	}
+
+	public void setCpResource(ClassPathResource cpResource) {
+		this.cpResource = cpResource;
+	}
+
+	public String getPdfSelectFileName() {
+		return pdfSelectFileName;
+	}
+
+	public void setPdfSelectFileName(String pdfSelectFileName) {
+		this.pdfSelectFileName = pdfSelectFileName;
+	}	
 }

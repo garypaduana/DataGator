@@ -117,7 +117,24 @@
 		<int:service-activator ref="fileProcessor" method="scrapeUrl"/>
 		<int:service-activator expression="payload.delete()"/>
 	</int:chain>
+	
+	<!-- ########################## -->
+	<!-- ###   pdf select       ### -->
+	<!-- ########################## -->	
 
+	<file:inbound-channel-adapter
+		directory="${paths.pdfselect}"
+		channel="pdfSelectChannel"
+		filename-regex="${pdfselect.regex}"
+		prevent-duplicates="false">
+		<int:poller fixed-delay="${poller.delay}"/>
+	</file:inbound-channel-adapter>
+	
+	<int:chain input-channel="pdfSelectChannel" output-channel="stdout">
+		<int:service-activator ref="fileProcessor" method="selectPdfPages"/>
+		<int:service-activator expression="payload.delete()"/>
+	</int:chain>
+	
 	<!-- ########################## -->
 	<!-- ###  Generic Adapters  ### -->
 	<!-- ########################## -->
@@ -129,6 +146,13 @@
 	<!-- ########################## -->
 	<!-- ###       Beans        ### -->
 	<!-- ########################## -->
+	
+	<bean
+		id="pdfSelectUrlResource"
+		class="org.springframework.core.io.ClassPathResource">
+<!-- 		<constructor-arg value="file:src/main/resources/python/pdf_select.py"/> -->
+		<constructor-arg value="python/${pdfselect.name}"/>
+	</bean>
 	
 	<bean
 		id="fileProcessor"
@@ -143,5 +167,7 @@
 		<property name="mp3Quality" value="${mp3.quality}"/>
 		<property name="rotateParent" value="${paths.rotate}"/>
 		<property name="scrapeRegex" value="${scrape.regex}"/>
+		<property name="cpResource" ref="pdfSelectUrlResource"/>
+		<property name="pdfSelectFileName" value="${pdfselect.name}"/>
 	</bean>	
 </beans>
