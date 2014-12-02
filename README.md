@@ -8,6 +8,7 @@ DataGator is a Spring Integration tool for common task automation including:
 - encode mp3s using lame to lower the filesize with a lower, variable bitrate
 - download jpg, gif, png, and webm by scraping an html document
 - select a subset of pages from a pdf document
+- rotate each page in a pdf document by 180 degrees
 
 Many tasks can be performed by creating a Chrome `.url` bookmark file in the appropriate directory.  For instance, to download a video from Youtube, drag a link to the desired page into the youtube download folder.  DataGator will look for the following format when reading the file:
 
@@ -28,5 +29,3 @@ Top level dependencies should be available on `PATH`.
 
 ##Running
 - `$ java -jar ./target/DataGator-0.1.0.jar`
-
-
