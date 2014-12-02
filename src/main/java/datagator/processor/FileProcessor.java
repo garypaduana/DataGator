@@ -27,8 +27,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.integration.annotation.Header;
-import org.springframework.integration.annotation.Payload;
 
 public class FileProcessor {
 
@@ -51,8 +49,11 @@ public class FileProcessor {
 	
 	private String scrapeRegex;
 	
-	private ClassPathResource cpResource;
+	private ClassPathResource pdfSelectResource;
+	private ClassPathResource pdfRotateResource;
+	
 	private String pdfSelectFileName;
+	private String pdfRotateFileName;
 	
 	private static final Logger log = Logger.getLogger(FileProcessor.class);
 	/**
@@ -212,12 +213,21 @@ public class FileProcessor {
 		return file;
 	}
 	
+	/**
+	 * Selects a subset of pages from a PDF document.  The pages and ranges are derived
+	 * from the filename.  Example:  "34,45-56,78,92.pdf"
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public File selectPdfPages(File file) 
 		throws IOException, InterruptedException{
 		
 		List<String> command = new ArrayList<String>();
 		File pythonSourceFile = new File(file.getParentFile(), pdfSelectFileName);
-		inputStreamToFile(cpResource.getInputStream(), pythonSourceFile);
+		inputStreamToFile(pdfSelectResource.getInputStream(), pythonSourceFile);
 		
 		command.clear();
 		command.add("python");
@@ -227,7 +237,7 @@ public class FileProcessor {
 		
 		String fileNameNoExt = FilenameUtils.removeExtension(file.getName());
 		
-		for(String part : fileNameNoExt.split(" ")){
+		for(String part : fileNameNoExt.split(",")){
 			command.add(part);
 		}
 		
@@ -235,6 +245,42 @@ public class FileProcessor {
 		return file;
 	}
 	
+	/**
+	 * Rotates each page in a PDF document by 180 degrees.
+	 * 
+	 * @param file
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public File rotatePdfPages(File file) 
+		throws IOException, InterruptedException{
+		
+		List<String> command = new ArrayList<String>();
+		File pythonSourceFile = new File(file.getParentFile(), pdfRotateFileName);
+		inputStreamToFile(pdfRotateResource.getInputStream(), pythonSourceFile);
+		
+		command.clear();
+		command.add("python");
+		command.add(pythonSourceFile.getAbsolutePath());
+		command.add(file.getAbsolutePath());
+		command.add(pythonSourceFile.getParent() + "/completed/");
+				
+		executeCommand(command);
+		return file;
+	}
+	
+	/**
+	 * Writes an InputStream to a file.  This is useful for taking a python
+	 * source file from the packaged jar file and placing it in a working 
+	 * directory so an external process can be launched to execute the script.
+	 * 
+	 * It certainly has other uses, but that's how it is used in this package.
+	 * 
+	 * @param is
+	 * @param destination
+	 * @throws IOException
+	 */
 	public void inputStreamToFile(InputStream is, File destination) throws IOException{
 		try(BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(destination))){
 			byte[] buffer = new byte[8192];
@@ -464,19 +510,35 @@ public class FileProcessor {
 		this.scrapeRegex = scrapeRegex;
 	}
 
-	public ClassPathResource getCpResource() {
-		return cpResource;
-	}
-
-	public void setCpResource(ClassPathResource cpResource) {
-		this.cpResource = cpResource;
-	}
-
 	public String getPdfSelectFileName() {
 		return pdfSelectFileName;
 	}
 
 	public void setPdfSelectFileName(String pdfSelectFileName) {
 		this.pdfSelectFileName = pdfSelectFileName;
+	}
+
+	public String getPdfRotateFileName() {
+		return pdfRotateFileName;
+	}
+
+	public void setPdfRotateFileName(String pdfRotateFileName) {
+		this.pdfRotateFileName = pdfRotateFileName;
+	}
+
+	public ClassPathResource getPdfRotateResource() {
+		return pdfRotateResource;
+	}
+
+	public void setPdfRotateResource(ClassPathResource pdfRotateResource) {
+		this.pdfRotateResource = pdfRotateResource;
 	}	
+	
+	public ClassPathResource getPdfSelectResource() {
+		return pdfSelectResource;
+	}
+
+	public void setPdfSelectResource(ClassPathResource pdfSelectResource) {
+		this.pdfSelectResource = pdfSelectResource;
+	}
 }
