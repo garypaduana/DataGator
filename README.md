@@ -5,7 +5,7 @@ DataGator is a Spring Integration tool for common task automation including:
 - download Youtube audio tracks
 - encode videos using HandbrakeCLI
 - rotate videos 90 deg clockwise using ffmpeg
-- encode mp3s using lame to lower filesize with lower variable bitrate
+- encode mp3s using lame to lower the filesize with a lower, variable bitrate
 - download jpg, gif, png, and webm by scraping an html document
 - select a subset of pages from a pdf document
 
